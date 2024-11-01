@@ -116,6 +116,8 @@ jobs:
         name: Build binaries
         run: |
           & docker run --name ${{ env.TEST_CTN_NAME }} -e "DOCKER_GITCOMMIT=${{ github.sha }}" `
+              -e "VERSION=${{ needs.prepare.outputs.tag }}" `
+              -e "DOCKERCLI_VERSION=27.3.1" `
               -v "${{ github.workspace }}\go-build:C:\Users\ContainerAdministrator\AppData\Local\go-build" `
               -v "${{ github.workspace }}\go\pkg\mod:C:\gopath\pkg\mod" `
               ${{ env.TEST_IMAGE_NAME }} hack\make.ps1 -Daemon -Client
@@ -153,6 +155,15 @@ jobs:
         run: |
           tree -nh ${{ env.BIN_OUT }}
       -
+        name: Archive artifacts
+        working-directory: ${{ env.BIN_OUT }}
+        run: |
+          tar czvf "${{ env.BIN_OUT }}/docker-${{ needs.prepare.outputs.tag }}.windows-amd64.tar.gz" --sort=name *.exe
+      -
+        name: List artifacts
+        run: |
+          tree -nh ${{ env.BIN_OUT }}
+      -
         name: GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191  # v2.0.8
@@ -160,5 +171,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           draft: true
-          files: ${{ env.BIN_OUT }}/*
+          files: ${{ env.BIN_OUT }}/*.tar.gz
           name: ${{ needs.prepare.outputs.tag }}
