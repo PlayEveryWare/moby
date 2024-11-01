@@ -118,7 +118,7 @@ func (i *ImageService) Children(_ context.Context, id image.ID) ([]image.ID, err
 // CreateLayer creates a filesystem layer for a container.
 // called from create.go
 // TODO: accept an opt struct instead of container?
-func (i *ImageService) CreateLayer(container *container.Container, initFunc layer.MountInit) (container.RWLayer, error) {
+func (i *ImageService) CreateLayer(container *container.Container, initFunc layer.MountInit, labels map[string]string) (container.RWLayer, error) {
 	var img *image.Image
 	if container.ImageID != "" {
 		containerImg, err := i.imageStore.Get(container.ImageID)
