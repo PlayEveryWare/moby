@@ -18,7 +18,7 @@ import (
 )
 
 // PrepareSnapshot prepares a snapshot from a parent image for a container
-func (i *ImageService) PrepareSnapshot(ctx context.Context, id string, parentImage string, platform *ocispec.Platform, setupInit func(string) error) error {
+func (i *ImageService) PrepareSnapshot(ctx context.Context, id string, parentImage string, platform *ocispec.Platform, setupInit func(string) error, labels map[string]string) error {
 	var parentSnapshot string
 	if parentImage != "" {
 		img, err := i.resolveImage(ctx, parentImage)
@@ -72,7 +72,10 @@ func (i *ImageService) PrepareSnapshot(ctx context.Context, id string, parentIma
 		return i.remapSnapshot(ctx, snapshotter, id, id+"-init")
 	}
 
-	_, err = snapshotter.Prepare(ctx, id, id+"-init")
+	sops := []snapshots.Opt {
+		snapshots.WithLabels(labels),
+	}
+	_, err = snapshotter.Prepare(ctx, id, id+"-init", sops...)
 	return err
 }
 
