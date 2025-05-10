@@ -21,7 +21,7 @@ import (
 )
 
 // CreateLayer creates a new layer for a container.
-func (i *ImageService) CreateLayer(ctr *container.Container, initFunc layer.MountInit) (container.RWLayer, error) {
+func (i *ImageService) CreateLayer(ctr *container.Container, initFunc layer.MountInit, labels map[string]string) (container.RWLayer, error) {
 	var descriptor *ocispec.Descriptor
 	if ctr.ImageManifest != nil {
 		descriptor = ctr.ImageManifest
@@ -31,7 +31,7 @@ func (i *ImageService) CreateLayer(ctr *container.Container, initFunc layer.Moun
 		StorageOpt: ctr.HostConfig.StorageOpt,
 	}
 
-	return i.createLayer(descriptor, ctr.ID, rwLayerOpts, initFunc)
+	return i.createLayer(descriptor, ctr.ID, rwLayerOpts, initFunc, labels)
 }
 
 // CreateLayerFromImage creates a new layer from an image
@@ -41,10 +41,10 @@ func (i *ImageService) CreateLayerFromImage(img *image.Image, layerName string, 
 		descriptor = img.Details.ManifestDescriptor
 	}
 
-	return i.createLayer(descriptor, layerName, rwLayerOpts, nil)
+	return i.createLayer(descriptor, layerName, rwLayerOpts, nil, nil)
 }
 
-func (i *ImageService) createLayer(descriptor *ocispec.Descriptor, layerName string, rwLayerOpts *layer.CreateRWLayerOpts, initFunc layer.MountInit) (container.RWLayer, error) {
+func (i *ImageService) createLayer(descriptor *ocispec.Descriptor, layerName string, rwLayerOpts *layer.CreateRWLayerOpts, initFunc layer.MountInit, labels map[string]string) (container.RWLayer, error) {
 	ctx := context.TODO()
 	var parentSnapshot string
 	if descriptor != nil {
@@ -78,7 +78,11 @@ func (i *ImageService) createLayer(descriptor *ocispec.Descriptor, layerName str
 	if !i.idMapping.Empty() {
 		err = i.remapSnapshot(ctx, sn, layerName, parentSnapshot)
 	} else {
-		_, err = sn.Prepare(ctx, layerName, parentSnapshot)
+		sopts := []snapshots.Opt {
+			snapshots.WithLabels(labels),
+		}
+
+		_, err = sn.Prepare(ctx, layerName, parentSnapshot, sopts...)
 	}
 
 	if err != nil {
